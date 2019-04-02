@@ -1,0 +1,16 @@
+18d3d3064706cebdfa9b73956e502a95 *ChangeLog
+ee9bb7cbb1f9a0595d9e2658a44cf350 *DESCRIPTION
+0766bc959ae903370c455c89e9bd5ad2 *NAMESPACE
+716cb1d0007b35214a07ee0c288e5b2a *NEWS
+b4b7940454f713f65958fdca32f6cbd9 *R/functions.R
+9460d246a97e0e90f9bb2dc7b9cadc0c *inst/tests/write_read.R
+2993d39d4807d5851dc5c56cd5754966 *inst/unitTests/runTests.R
+950b4826a98e774f3f2f043315c97ee0 *inst/unitTests/test_results.txt
+00b3feeec200a576ea1c21847794ac90 *inst/unitTests/ut_write_read.R
+184ba03f4055786b7750a6639ea42d5c *man/as.ts_table.Rd
+fc3bf5a0642855c7c3b060dc8dcd9dc7 *man/file_info.Rd
+d4109ff2de286e90baa5082b444b4ef2 *man/read_ts_tables.Rd
+7e7fd2fe94ea7bd191348212accf309b *man/ts_table.Rd
+7c788c606cc4bd1b75b2cc1f791f663d *man/tsdb.Rd
+f914c08bfb4bac1343063e564d4f1fcf *man/ttime.Rd
+fb1edc356123cf946af644016107d0e6 *man/write_ts_table.Rd
