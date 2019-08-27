@@ -1,3 +1,44 @@
+v0.7-0  (2019-08-27)
+
+  o 'read_ts_tables': fixed -- when 'end' was missing,
+    the function had ignored 'drop.weekends'
+
+  o 'read_ts_tables': the default value for
+    'drop.weekends' has changed from TRUE to FALSE
+
+  o 'read_ts_tables' gains an argument 'timestamp': if
+    specified, only data at the times in 'timestamp'
+    are selected
+
+  o 'ts_table' now allows construction of an empty
+    ts_table with defined columns:
+        ts_table(columns = c("A", "B"))
+
+  o the (very limited and experimental) support for
+    'MonetDBLite' has been removed (as that package is
+    unfortunately no longer on CRAN)
+
+  o a script with some timing tests is available at
+      https://github.com/enricoschumann/tsdb/blob/master/inst/tests/write_read.R
+    and
+      https://gitlab.com/enricoschumann/tsdb/blob/master/inst/tests/write_read.R
+
+    If the package is installed, the file may also be
+    found with
+        system.file("tests/write_read.R", package = "tsdb")
+
+v0.6-3  (2019-06-14)
+
+  o read_ts_tables: fixed -- column names are no
+    longer changed when series are read
+    (before, column names were by mistake changed
+    into `syntactically valid names'; e.g., spaces
+    in names were substituted by dots '.')
+
+v0.6-3  (2019-03-31)
+
+  o CRAN release; no user-visible changes
+
 v0.6-1  (2019-03-26)
 
   o various documentation updates

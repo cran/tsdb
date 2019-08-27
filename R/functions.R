@@ -31,11 +31,20 @@ ttime <- function(x, from = "datetime", to = "numeric",
 ## --------------------- ts_table
 
 ts_table <- function(data, timestamp, columns) {
+
+    if (missing(data) && missing(timestamp)) {
+        ans <- as.matrix(numeric(0))
+        attr(ans, "timestamp") <- numeric(0)
+        attr(ans, "t.type") <- "Date"
+        attr(ans, "columns") <- columns
+        class(ans) <- "ts_table"
+        return(ans)
+    }
+
     if (!inherits(timestamp, "Date") &&
         !inherits(timestamp, "POSIXt"))
         stop(sQuote("timestamp"), " must be Date or POSIXt")
-    ## TODO if character, match regexp and then coerce
-    ##      to Date/POSIXct?
+
     if (inherits(timestamp, "POSIXlt")) {
         timestamp <- ttime(as.POSIXct(timestamp))
         t.type <- "POSIXct"
@@ -52,6 +61,8 @@ ts_table <- function(data, timestamp, columns) {
     if (missing(columns))
         columns <- colnames(ans)
     ans <- unname(ans)
+    if (length(timestamp) != nrow(ans))
+        stop("length of timestamp does not match number of rows")
     if (is.null(columns))
         stop("no column names, and ", sQuote("columns"), " not provided")
     if (ncol(ans) != length(columns))
@@ -144,18 +155,6 @@ write_ts_table <- function(ts, dir, file,
                         col.names = c("timestamp", columns),
                         sep = ",")
         }
-    } else if (backend == "monetdb") {
-
-        if (!inherits(dir, "MonetDBEmbeddedConnection")) {
-            dir <- DBI::dbConnect(MonetDBLite::MonetDBLite(), dir)
-            on.exit(DBI::dbDisconnect(dir, shutdown = TRUE))
-        }
-
-        df <- data.frame(timestamp, unclass(ts))
-        colnames(df) <- c("timestamp", columns)
-        DBI::dbWriteTable(dir, DBI::dbQuoteIdentifier(dir, file), df,
-                          overwrite = overwrite)
-
     } else
         stop("unknown backend")
     invisible(ans)
@@ -164,11 +163,12 @@ write_ts_table <- function(ts, dir, file,
 read_ts_tables <- function(file, dir, t.type = "guess",
                            start, end, columns,
                            return.class = NULL,
-                           drop.weekends = TRUE,
+                           drop.weekends = FALSE,
                            column.names = "%dir%/%file%::%column%",
                            backend = "csv",
                            read.fn = NULL,
-                           frequency = "1 sec") {
+                           frequency = "1 sec",
+                           timestamp) {
 
     backend <- tolower(backend)
 
@@ -219,6 +219,7 @@ read_ts_tables <- function(file, dir, t.type = "guess",
             columns <- tmp[-1L]
         }
 
+        do.match <- length(dfile) > 1L || !missing(timestamp)
         if (t.type == "Date") {
             start <- if (missing(start) && length(timestamp1))
                          ttime(timestamp1, "numeric", "Date")
@@ -230,13 +231,19 @@ read_ts_tables <- function(file, dir, t.type = "guess",
                          as.Date(start)
 
             end   <- if (missing(end))
-                         previous_businessday(Sys.Date())
+                         if (drop.weekends)
+                             previous_businessday(Sys.Date())
+                         else
+                             Sys.Date()
                      else
                          as.Date(end)
-            timestamp <- seq(start, end , "1 day")
-            if (drop.weekends)
-                timestamp <- timestamp[is_businessday(timestamp)]
-            timestamp <- c(unclass(timestamp))
+            if (do.match) {
+                if (missing(timestamp))
+                    timestamp <- seq(start, end , "1 day")
+                if (drop.weekends)
+                    timestamp <- timestamp[is_businessday(timestamp)]
+                timestamp <- c(unclass(timestamp))
+            }
         } else if (t.type == "POSIXct") {
             start <- if (missing(start))
                          ttime(timestamp1,
@@ -244,39 +251,50 @@ read_ts_tables <- function(file, dir, t.type = "guess",
                      else
                          as.POSIXct(start)  ## in case it is POSIXlt
 
-            if (missing(end))
-                end <- as.POSIXct(previous_businessday(Sys.Date()))
-            else
-                end <- as.POSIXct(end)
-            if (frequency != "1 sec") {
+            end   <- if (missing(end))
+                         if (drop.weekends)
+                             as.POSIXct(previous_businessday(Sys.Date()))
+                         else
+                             Sys.time()
+                     else
+                         as.POSIXct(end)
+
+            if (!is.na(frequency) && frequency != "1 sec" && do.match) {
                 start <- roundPOSIXt(start, frequency)
                 end   <- roundPOSIXt(end,   frequency, up = TRUE)
             }
-            timestamp <- seq(start, end , frequency)
-            if (drop.weekends)
-                timestamp <- timestamp[is_businessday(timestamp)]
-            timestamp <- c(unclass(timestamp))
+            if (do.match) {
+                if (missing(timestamp))
+                    timestamp <- seq(start, end , frequency)
+                if (drop.weekends)
+                    timestamp <- timestamp[is_businessday(timestamp)]
+                timestamp <- c(unclass(timestamp))
+            }
         } else
             stop("unknown ", sQuote("t.type"))
 
         nc <- length(columns)
-        results <- array(NA_real_,
-                         dim = c(length(timestamp), length(dfile)*nc))
+        if (do.match)
+            results <- array(NA_real_,
+                             dim = c(length(timestamp),
+                                     length(dfile)*nc))
         for (i in seq_along(dfile)) {
             if (is.null(read.fn))
                 tmp <- read.table(dfile[[i]],
                                   sep = ",",
                                   stringsAsFactors = FALSE,
                                   header = TRUE,
-                                  colClasses = "numeric")
+                                  colClasses = "numeric",
+                                  check.names = FALSE)
             else if (read.fn == "fread")
                 tmp <- data.table::fread(dfile[[i]],
                                          sep = ",",
                                          header = TRUE,
-                                         data.table = FALSE)
+                                         data.table = FALSE,
+                                         check.names = FALSE)
             else
                 stop("unknown ", sQuote("read.fn"))
-            ii <- fmatch(tmp[[1L]], timestamp, nomatch = 0L)
+
             tmp.names <- colnames(tmp)
             if (!all(columns %in% tmp.names)) {
                 warning("columns missing")
@@ -284,13 +302,29 @@ read_ts_tables <- function(file, dir, t.type = "guess",
                 colnames(tmp) <- c(tmp.names,
                                    columns[!(columns %in% tmp.names)])
             }
-            res <- tmp[ , columns, drop = FALSE][ii > 0L, ]
-            if (!is.null(res))
-                results[ii, (nc*(i-1)+1):(nc*i)] <- as.matrix(res)
+            if (do.match) {
+                ii <- fmatch(tmp[[1L]], timestamp, nomatch = 0L)
+                res <- tmp[, columns, drop = FALSE][ii > 0L, , drop=FALSE]
+                if (!is.null(res))
+                    results[ii, (nc*(i-1)+1):(nc*i)] <- as.matrix(res)
+            } else {
+                timestamp <- tmp[[1L]]
+                results <- as.matrix(tmp[, columns, drop = FALSE])
+
+                ## if 'results' has no rows, 'as.matrix'
+                ## will return an empty array of mode
+                ## 'logical'
+                if (storage.mode(results) == "logical")
+                    storage.mode(results) <- "numeric"
+
+                ii <- timestamp >= start & timestamp <= end
+                timestamp <- timestamp[ii]
+                results <- results[ii, , drop = FALSE]
+            }
         }
 
         rm <- rowSums(is.na(results)) == dim(results)[[2L]]
-        results <- results[!rm, ,drop = FALSE]
+        results <- results[!rm, , drop = FALSE]
         timestamp <- timestamp[!rm]
         colnames <- rep.int(column.names, dim(results)[[2L]])
         .dir <- rep(dir, each = length(columns))
@@ -301,16 +335,6 @@ read_ts_tables <- function(file, dir, t.type = "guess",
             colnames[[i]] <- gsub("%file%",   .file[[i]],    colnames[[i]])
             colnames[[i]] <- gsub("%column%", .columns[[i]], colnames[[i]])
         }
-
-    } else if (backend == "monetdb") {
-           ### ********************
-
-        if (!inherits(dir, "MonetDBEmbeddedConnection")) {
-            dir <- DBI::dbConnect(MonetDBLite::MonetDBLite(), dir)
-            on.exit(DBI::dbDisconnect(dir, shutdown = TRUE))
-        }
-
-        DBI::dbGetQuery(dir, "SELECT * FROM file;")
 
     } else
         stop("unknown backend")

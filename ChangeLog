@@ -1,6 +1,57 @@
+2019-08-27  Enrico Schumann  <es@enricoschumann.net>
+
+        * DESCRIPTION (Version): 0.7-0
+
+        * DESCRIPTION (Suggests): remove support for
+        MonetDBLite; switch from RUnit to tinytest
+
+2019-08-15  Enrico Schumann  <es@enricoschumann.net>
+
+        * R/functions.R (read_ts_tables): the default
+        value for 'drop.weekends' has changed from TRUE
+        to FALSE
+
+        * R/functions.R (ts_table): allow construction
+        of empty 'ts_table' with defined columns:
+
+            ts_table(columns = c("A", "B"))
+
+        * inst/unitTests/*: remove directory. Tests
+        are now in directory 'inst/tinytest' and use
+        package 'tinytest' instead of 'RUnit'
+
+2019-07-31  Enrico Schumann  <es@enricoschumann.net>
+
+        * R/functions.R (read_ts_tables): new argument
+        'timestamp': if specified, only data at the
+        times in 'timestamp' are selected
+
+2019-07-29  Enrico Schumann  <es@enricoschumann.net>
+
+        * R/functions.R (read_ts_tables): fixed -- when
+        'end' was missing, the function would always
+        drop weekends
+
+2019-06-14  Enrico Schumann  <es@enricoschumann.net>
+
+        * DESCRIPTION (Version): 0.6-3
+
+        * R/functions.R (read_ts_tables): fixed --
+        column names are no longer corrected by
+        'read.table' (i.e. check.names is now set to
+        FALSE)
+
+2019-03-31  Enrico Schumann  <es@enricoschumann.net>
+
+        * DESCRIPTION (Version): 0.6-2; CRAN release
+
+2019-03-26  Enrico Schumann  <es@enricoschumann.net>
+
+        * DESCRIPTION (Version): 0.6-1; see NEWS
+
 2019-03-21  Enrico Schumann  <es@enricoschumann.net>
 
-	* DESCRIPTION (Version): 0.6-0
+        * DESCRIPTION (Version): 0.6-0
 
         * NAMESPACE: import 'datetimeutils::roundPOSIXt'
 
