@@ -1,6 +1,6 @@
 ## The package uses code from Enrico Schumann's
 ## R package 'database'.
-## Copyright (C) Enrico Schumann 2010-2019
+## Copyright (C) Enrico Schumann 2010-2020
 
 ## ---------------- time
 
@@ -326,7 +326,16 @@ read_ts_tables <- function(file, dir, t.type = "guess",
         rm <- rowSums(is.na(results)) == dim(results)[[2L]]
         results <- results[!rm, , drop = FALSE]
         timestamp <- timestamp[!rm]
-        colnames <- rep.int(column.names, dim(results)[[2L]])
+
+        if (drop.weekends && !do.match) {
+            ii <- is_businessday(ttime(timestamp, from = "numeric", t.type))
+            results <- results[ii, , drop = FALSE]
+            timestamp <- timestamp[ii]
+        }
+        colnames <- if (length(column.names) == 1L)
+                        rep.int(column.names, dim(results)[[2L]])
+                    else
+                        column.names
         .dir <- rep(dir, each = length(columns))
         .file <- rep(file, each = length(columns))
         .columns <- rep(columns, length(.dir)/length(columns))
@@ -338,6 +347,7 @@ read_ts_tables <- function(file, dir, t.type = "guess",
 
     } else
         stop("unknown backend")
+
 
     if (is.null(return.class)) {
         list(data = results,

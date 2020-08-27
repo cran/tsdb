@@ -240,8 +240,8 @@ expect_equal(z12$data,
                          NA, 1, 2, 3, 4, 5),
                        .Dim = c(6L, 2L)))
 
-expect_equal(z12$timestamp,
-             as.POSIXct("2016-1-1 10:00:00", tz = "UTC")+0:5)
+expect_equivalent(unclass(z12$timestamp),
+                  c(unclass(as.POSIXct("2016-1-1 10:00:00", tz = "UTC")+0:5)))
 
 
 
@@ -265,8 +265,8 @@ ans <- read_ts_tables("P", dir = dir,
                       timestamp = as.POSIXct("2019-1-1 10:00:00",
                                              tz = "UTC") + 0.3)
 expect_equivalent(c(ans$data), 3)
-expect_equivalent(ans$timestamp,
-                  as.POSIXct("2019-1-1 10:00:00", tz = "UTC") + 0.3)
+expect_equivalent(c(unclass(ans$timestamp)),
+                  c(unclass(as.POSIXct("2019-1-1 10:00:00", tz = "UTC") + 0.3)))
 
 
 
@@ -558,3 +558,28 @@ expect_equal(as.ts_table(y, columns = "close"),
                                      16798, 16799, 16800),
                        t.type = "Date", columns = "close",
                        class = "ts_table"))
+
+
+## ----------------
+
+## column names (for 'zoo' only)
+x <- ts_table(data = 1:5,
+              timestamp = as.Date("2016-1-1") + 1:5,
+              columns = "A")
+y <- ts_table(data = 11:15,
+              timestamp = as.Date("2016-1-1") + 1:5,
+              columns = "A")
+write_ts_table(x, dir, "x", replace.file = TRUE)
+write_ts_table(y, dir, "y", replace.file = TRUE)
+
+ans <- read_ts_tables(c("x", "y"),
+                      dir = dir,
+                      column.names = "%file%",
+                      return.class = "zoo")
+expect_equal(colnames(ans), c("x", "y"))
+
+ans <- read_ts_tables(c("x", "y"),
+                      dir = dir,
+                      column.names = c("a", "b"),
+                      return.class = "zoo")
+expect_equal(colnames(ans), c("a", "b"))
