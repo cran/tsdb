@@ -1,8 +1,8 @@
 Package: tsdb
 Type: Package
 Title: Terribly-Simple Data Base for Time Series
-Version: 0.7-4
-Date: 2020-08-26
+Version: 1.0-0
+Date: 2020-12-31
 Maintainer: Enrico Schumann <es@enricoschumann.net>
 Authors@R: person(given = "Enrico", family = "Schumann",
                   role = c("aut", "cre"),
@@ -28,7 +28,7 @@ URL: http://enricoschumann.net/R/packages/tsdb/,
         https://github.com/enricoschumann/tsdb,
         https://gitlab.com/enricoschumann/tsdb
 NeedsCompilation: no
-Packaged: 2020-08-26 18:28:25 UTC; es19
+Packaged: 2021-01-06 17:01:38 UTC; es19
 Author: Enrico Schumann [aut, cre] (<https://orcid.org/0000-0001-7601-6576>)
 Repository: CRAN
-Date/Publication: 2020-08-27 03:10:03 UTC
+Date/Publication: 2021-01-06 17:40:02 UTC
